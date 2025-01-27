@@ -1,0 +1,14 @@
+questions:
+  - variable: settings.ingressController.namespace
+    default: "ingress-nginx"
+    description: "The namespace where the ingress controller (e.g., ingress-nginx) is deployed."
+    label: "Ingress Controller Namespace"
+    type: string
+    group: "Ingress Controller Settings"
+
+  - variable: settings.ingressController.label
+    default: "app.kubernetes.io/name=ingress-nginx"
+    description: "The pod label selector for identifying ingress-nginx-controller pods."
+    label: "Ingress Controller Pod Label"
+    type: string
+    group: "Ingress Controller Settings"
