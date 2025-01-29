@@ -76,7 +76,7 @@ func watchIngressPods(clientset *kubernetes.Clientset, stopCh chan struct{}) {
 			return
 		case event, ok := <-watcher.ResultChan():
 			if !ok {
-				logger.Warn("Pod watcher channel closed, restarting...")
+				logger.Warn("Pod watcher channel closed unexpectedly, restarting...")
 				time.Sleep(2 * time.Second) // Prevent tight loops
 				go watchIngressPods(clientset, stopCh)
 				return
@@ -84,20 +84,23 @@ func watchIngressPods(clientset *kubernetes.Clientset, stopCh chan struct{}) {
 
 			pod, ok := event.Object.(*v1.Pod)
 			if !ok {
+				logger.Warn("Received unexpected object type in pod watcher event")
 				continue
 			}
 
+			logger.Debugf("Received pod event: %s for pod %s", event.Type, pod.Name)
+
 			switch event.Type {
 			case watch.Added, watch.Modified:
-				// Start log streaming if the pod is not already being watched
 				if _, exists := podLogMap.Load(pod.Name); !exists {
 					logger.Infof("Starting log stream for new/updated pod: %s", pod.Name)
 					go streamPodLogs(clientset, pod, config.CFG.Namespace, stopCh)
 				}
 			case watch.Deleted:
-				// Stop log streaming for deleted pods
 				logger.Infof("Pod deleted: %s, stopping log stream.", pod.Name)
 				podLogMap.Delete(pod.Name)
+			default:
+				logger.Warnf("Unhandled event type: %s for pod %s", event.Type, pod.Name)
 			}
 		}
 	}
@@ -105,10 +108,11 @@ func watchIngressPods(clientset *kubernetes.Clientset, stopCh chan struct{}) {
 
 func streamPodLogs(clientset *kubernetes.Clientset, pod *v1.Pod, namespace string, stopCh chan struct{}) {
 	logger.Infof("Streaming logs for pod: %s", pod.Name)
-	podLogMap.Store(pod.Name, true) // Mark pod as being streamed
+	podLogMap.Store(pod.Name, true)
 
 	defer func() {
-		podLogMap.Delete(pod.Name) // Cleanup when log streaming stops
+		podLogMap.Delete(pod.Name)
+		logger.Infof("Stopped log streaming for pod: %s", pod.Name)
 	}()
 
 	for {
@@ -120,18 +124,24 @@ func streamPodLogs(clientset *kubernetes.Clientset, pod *v1.Pod, namespace strin
 			req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &v1.PodLogOptions{Follow: true})
 			readCloser, err := req.Stream(context.TODO())
 			if err != nil {
-				logger.Errorf("Error streaming logs for pod %s: %v", pod.Name, err)
-				time.Sleep(5 * time.Second) // Retry after a short delay
+				logger.Errorf("Error streaming logs for pod %s: %v. Retrying in 5 seconds...", pod.Name, err)
+				time.Sleep(5 * time.Second)
 				continue
 			}
+
+			logger.Infof("Successfully started log stream for pod: %s", pod.Name)
 
 			scanner := bufio.NewScanner(readCloser)
 			var filter string
 			if config.CFG.DefaultLogFormat {
-				filter = fmt.Sprintf(" [%s-", namespace) // Filter pattern using proxy_upstream_name
+				logger.Debugf("Using default log format for pod: %s", pod.Name)
+				filter = fmt.Sprintf(" [%s-", namespace)
 			} else {
-				filter = fmt.Sprintf(" [namespace: %s", namespace) // Filter pattern using custom log format field
+				logger.Debugf("Using custom log format for pod: %s", pod.Name)
+				filter = fmt.Sprintf(" [namespace: %s", namespace)
 			}
+
+			logger.Debugf("Filtering logs for pod %s using pattern: %s", pod.Name, filter)
 
 			for scanner.Scan() {
 				select {
@@ -152,23 +162,20 @@ func streamPodLogs(clientset *kubernetes.Clientset, pod *v1.Pod, namespace strin
 			}
 
 			readCloser.Close()
-			time.Sleep(5 * time.Second) // Prevent tight retry loops
+			logger.Warnf("Log stream closed unexpectedly for pod %s. Restarting in 5 seconds...", pod.Name)
+			time.Sleep(5 * time.Second)
 		}
 	}
 }
 
 func gracefulShutdown(stopCh chan struct{}) {
-	// Create a channel to listen for OS signals
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 
-	// Block until a signal is received
 	<-signalCh
 	logger.Info("Shutdown signal received. Cleaning up...")
 
-	// Signal all goroutines to stop
 	close(stopCh)
 
-	// Wait a moment for cleanup
 	logger.Info("Shutting down ReflowIngressLogs gracefully.")
 }

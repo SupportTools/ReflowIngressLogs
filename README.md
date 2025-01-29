@@ -115,9 +115,21 @@ spec:
         log-format-upstream: '$remote_addr - $remote_user [$time_local] $request $status $body_bytes_sent $http_referer $http_user_agent $request_length $request_time [$proxy_upstream_name] [namespace: $namespace] [$proxy_alternative_upstream_name] $upstream_addr $upstream_response_length $upstream_response_time $upstream_status $req_id'
 ```
 
+Then use the following values in the `ReflowIngressLogs` helm chart:
+
+```yaml
+settings:
+  debug: false
+  ingressController:
+    label: "app.kubernetes.io/name=rke2-ingress-nginx"
+    namespace: "kube-system"
+    defaultLogFormat: false
+```
+
 ### Example Configuration
 
 ```bash
+export DEBUG=true
 export KUBECONFIG=/path/to/kubeconfig
 export NAMESPACE=app
 export INGRESS_NAMESPACE=ingress-nginx

@@ -12,3 +12,10 @@ questions:
     label: "Ingress Controller Pod Label"
     type: string
     group: "Ingress Controller Settings"
+
+  - variable: settings.ingressController.defaultLogFormat
+    default: "true"
+    description: "If true, the default log format will be used. If false, use the custom log format."
+    label: "Use Default Log Format"
+    type: boolean
+    group: "Ingress Controller Settings"
