@@ -126,7 +126,12 @@ func streamPodLogs(clientset *kubernetes.Clientset, pod *v1.Pod, namespace strin
 			}
 
 			scanner := bufio.NewScanner(readCloser)
-			filter := fmt.Sprintf(" [%s-", namespace) // Filter pattern for the namespace
+			var filter string
+			if config.CFG.DefaultLogFormat {
+				filter = fmt.Sprintf(" [%s-", namespace) // Filter pattern using proxy_upstream_name
+			} else {
+				filter = fmt.Sprintf(" [namespace: %s", namespace) // Filter pattern using custom log format field
+			}
 
 			for scanner.Scan() {
 				select {

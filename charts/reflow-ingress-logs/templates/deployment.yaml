@@ -35,6 +35,8 @@ spec:
               value: "{{ .Values.settings.ingressController.namespace }}"
             - name: LABEL_SELECTOR
               value: "{{ .Values.settings.ingressController.label }}"
+            - name: DEFAULT_LOG_FORMAT
+              value: "{{ .Values.settings.ingressController.defaultLogFormat }}"
             - name: NAMESPACE
               valueFrom:
                 fieldRef:

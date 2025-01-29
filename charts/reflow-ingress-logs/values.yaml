@@ -5,6 +5,7 @@ settings:
   ingressController:
     label: "app.kubernetes.io/name=ingress-nginx"
     namespace: "ingress-nginx"
+    defaultLogFormat: true # If true, the default log format will be used. If false, use the custom log format. See the README for more information.
 
 replicaCount: 1
 
@@ -52,22 +53,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-# Readiness and Liveness probes
-readinessProbe:
-  enabled: true
-  initialDelaySeconds: 5
-  periodSeconds: 10
-  timeoutSeconds: 1
-  failureThreshold: 3
-  successThreshold: 1
-  path: /healthz
-
-livenessProbe:
-  enabled: true
-  initialDelaySeconds: 10
-  periodSeconds: 20
-  timeoutSeconds: 1
-  failureThreshold: 5
-  successThreshold: 1
-  path: /healthz

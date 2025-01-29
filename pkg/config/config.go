@@ -15,6 +15,7 @@ type AppConfig struct {
 	Namespace              string `json:"namespace"`              // Namespace for filtering logs
 	IngressNamespace       string `json:"ingressNamespace"`       // Namespace of ingress-nginx controllers
 	IngressControllerLabel string `json:"ingressControllerLabel"` // Label selector for ingress-nginx pods
+	DefaultLogFormat       bool   `json:"defaultLogFormat"`       // Use NGINX default log format
 }
 
 // CFG is the global configuration instance.
@@ -28,6 +29,7 @@ func LoadConfiguration() {
 	CFG.Namespace = getEnvOrDefault("NAMESPACE", "")
 	CFG.IngressNamespace = getEnvOrDefault("INGRESS_NAMESPACE", "ingress-nginx")
 	CFG.IngressControllerLabel = getEnvOrDefault("LABEL_SELECTOR", "app.kubernetes.io/name=ingress-nginx")
+	CFG.DefaultLogFormat = parseEnvBool("DEFAULT_LOG_FORMAT", true)
 
 	// Validate the loaded configuration
 	if err := ValidateRequiredConfig(); err != nil {
