@@ -152,7 +152,7 @@ func streamPodLogs(clientset *kubernetes.Clientset, pod *v1.Pod, namespace strin
 				default:
 					line := scanner.Text()
 					if strings.Contains(line, filter) {
-						logger.Infof("[%s] %s", pod.Name, line)
+						fmt.Println(line)
 					}
 				}
 			}
