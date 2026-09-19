@@ -16,6 +16,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
+          # GOCACHE/GOMODCACHE already live on the runner's persistent shared /cache; setup-go's cache step only re-archives it (6-27 min on-prem).
+          cache: false
           go-version: '1.23'
 
       - name: Run tests
